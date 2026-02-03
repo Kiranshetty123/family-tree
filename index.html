@@ -1,51 +1,186 @@
-<base href="./src/">
-<title>The Kalashyan Family Tree</title>
-<meta name="viewport" content="width=1100">
-<meta name="description" content="The Kalashyan Family Tree. From ancestors to future generations, from the roots to the top.">
-<meta property="og:image" content="http://sedrak.info/we.jpg">
-<meta property="og:image:url" content="http://sedrak.info/we.jpg">
-<script src='./third_party/polyfill-fetch.js'></script>
-<script src='./third_party/papaparse.min.js'></script>
-<script src='./app.js'></script>
-<script src='./utils/platform.js'></script>
-<script src='./utils/geometry.js'></script>
-<script src='./family_tree.js'></script>
-<script src='./sun_layout.js'></script>
-<script src='./renderer.js'></script>
-<script src='./canvas_renderer.js'></script>
-<script src='./svg_renderer.js'></script>
-<script src='./tree_loader.js'></script>
-<script src='./interaction_controller.js'></script>
-<script src='./debug_controls.js'></script>
-<script src='./index.js'></script>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Family Tree</title>
+<style>
+body {
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  font-family: Arial, sans-serif;
+  background: #f7f3ee;
+}
 
-<link rel='stylesheet' href='style.css'>
-<link rel='stylesheet' href='debug_controls.css'>
-<link rel='stylesheet' href='svg_renderer.css'>
-<link rel="icon" type="image/png" href="/favicon.png" />
-<div class='overlay'>
-    <header>
-        <div>
-            <div class='title'></div>
-            <div class='subtitle'></div>
-        </div>
-        <div class='top-right'>
-            <select class='config-selector'></select>
-            <div class='tutorial'></div>
-        </div>
-    </header>
-    <div class='viewport'></div>
-    <footer>
-    </footer>
+#panel {
+  width: 280px;
+  background: #efe8dc;
+  padding: 15px;
+  border-right: 1px solid #bbb;
+}
+
+label { font-size: 13px; display: block; margin-top: 8px; }
+input, select, button {
+  width: 100%;
+  padding: 6px;
+  margin-top: 4px;
+}
+
+#tree {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+}
+
+.person {
+  position: absolute;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #fff;
+  text-align: center;
+  cursor: pointer;
+}
+
+.male { background: #e6f0ff; }
+.female { background: #ffe6ea; }
+
+.line {
+  position: absolute;
+  width: 2px;
+  background: #555;
+}
+</style>
+</head>
+
+<body>
+
+<div id="panel">
+  <h3>Edit Person</h3>
+
+  <label>Name</label>
+  <input id="name">
+
+  <label>Gender</label>
+  <select id="gender">
+    <option value="male">Male</option>
+    <option value="female">Female</option>
+  </select>
+
+  <label>Birth Year</label>
+  <input id="birth">
+
+  <label>Village</label>
+  <input id="village">
+
+  <button onclick="addParents()">➕ Add Parents</button>
+  <button onclick="addChild()">➕ Add Child</button>
 </div>
-<!-- REMOVE THIS WHEN FORKED -->
+
+<div id="tree"></div>
+
 <script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+let people = JSON.parse(localStorage.getItem("family2")) || {
+  me: { id:"me", name:"Kiran", gender:"male", gen:0, parents:[], children:[] }
+};
 
-  ga('create', 'UA-24607980-7', 'auto');
-  ga('send', 'pageview');
+let selected = "me";
+const tree = document.getElementById("tree");
 
+function layout() {
+  const levels = {};
+
+  Object.values(people).forEach(p => {
+    if (!levels[p.gen]) levels[p.gen] = [];
+    levels[p.gen].push(p);
+  });
+
+  Object.keys(levels).forEach(gen => {
+    const list = levels[gen];
+    const spacing = 140;
+    const startX = (tree.clientWidth / 2) - (list.length * spacing) / 2;
+
+    list.forEach((p,i) => {
+      p.x = startX + i * spacing;
+      p.y = 250 + gen * 140;
+    });
+  });
+}
+
+function draw() {
+  tree.innerHTML = "";
+  layout();
+
+  Object.values(people).forEach(p => {
+    const d = document.createElement("div");
+    d.className = "person " + p.gender;
+    d.style.left = p.x + "px";
+    d.style.top = p.y + "px";
+    d.innerText = p.name;
+    d.onclick = () => select(p.id);
+    tree.appendChild(d);
+
+    p.children.forEach(cid => drawLine(p, people[cid]));
+  });
+
+  localStorage.setItem("family2", JSON.stringify(people));
+}
+
+function drawLine(a,b) {
+  const line = document.createElement("div");
+  line.className = "line";
+  line.style.left = (a.x + 50) + "px";
+  line.style.top = (a.y + 35) + "px";
+  line.style.height = (b.y - a.y - 35) + "px";
+  tree.appendChild(line);
+}
+
+function select(id) {
+  selected = id;
+  const p = people[id];
+  name.value = p.name;
+  gender.value = p.gender;
+  birth.value = p.birth || "";
+  village.value = p.village || "";
+}
+
+name.oninput = () => people[selected].name = name.value;
+gender.onchange = () => { people[selected].gender = gender.value; draw(); };
+birth.oninput = () => people[selected].birth = birth.value;
+village.oninput = () => people[selected].village = village.value;
+
+function addParents() {
+  const child = people[selected];
+  if (child.parents.length) return;
+
+  const fatherId = "f" + Date.now();
+  const motherId = "m" + Date.now();
+
+  people[fatherId] = { id:fatherId, name:"Father", gender:"male", gen:child.gen - 1, parents:[], children:[child.id] };
+  people[motherId] = { id:motherId, name:"Mother", gender:"female", gen:child.gen - 1, parents:[], children:[child.id] };
+
+  child.parents = [fatherId, motherId];
+  draw();
+}
+
+function addChild() {
+  const parent = people[selected];
+  const id = "c" + Date.now();
+
+  people[id] = {
+    id, name:"Child", gender:"male",
+    gen: parent.gen + 1,
+    parents:[parent.id],
+    children:[]
+  };
+
+  parent.children.push(id);
+  draw();
+}
+
+draw();
+select("me");
 </script>
+
+</body>
+</html>
