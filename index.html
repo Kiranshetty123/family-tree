@@ -1,218 +1,51 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<title>Family Tree</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<base href="./src/">
+<title>The Kalashyan Family Tree</title>
+<meta name="viewport" content="width=1100">
+<meta name="description" content="The Kalashyan Family Tree. From ancestors to future generations, from the roots to the top.">
+<meta property="og:image" content="http://sedrak.info/we.jpg">
+<meta property="og:image:url" content="http://sedrak.info/we.jpg">
+<script src='./third_party/polyfill-fetch.js'></script>
+<script src='./third_party/papaparse.min.js'></script>
+<script src='./app.js'></script>
+<script src='./utils/platform.js'></script>
+<script src='./utils/geometry.js'></script>
+<script src='./family_tree.js'></script>
+<script src='./sun_layout.js'></script>
+<script src='./renderer.js'></script>
+<script src='./canvas_renderer.js'></script>
+<script src='./svg_renderer.js'></script>
+<script src='./tree_loader.js'></script>
+<script src='./interaction_controller.js'></script>
+<script src='./debug_controls.js'></script>
+<script src='./index.js'></script>
 
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f7f3ee;
-  display: flex;
-  height: 100vh;
-}
-
-/* LEFT PANEL */
-#panel {
-  width: 300px;
-  background: #efe8dc;
-  padding: 15px;
-  border-right: 1px solid #bbb;
-}
-
-#panel h3 {
-  margin-top: 0;
-}
-
-label {
-  font-size: 13px;
-  margin-top: 8px;
-  display: block;
-}
-
-input, select {
-  width: 100%;
-  padding: 6px;
-  margin-top: 3px;
-}
-
-button {
-  margin-top: 8px;
-  width: 100%;
-  padding: 6px;
-  cursor: pointer;
-}
-
-/* TREE AREA */
-#tree {
-  flex: 1;
-  position: relative;
-  overflow: auto;
-}
-
-/* PERSON BOX */
-.person {
-  position: absolute;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #555;
-  background: #fff;
-  cursor: pointer;
-  text-align: center;
-  min-width: 110px;
-}
-
-.male { background: #e6f0ff; }
-.female { background: #ffe6ea; }
-
-.line {
-  position: absolute;
-  background: #555;
-}
-</style>
-</head>
-
-<body>
-
-<!-- LEFT EDIT PANEL -->
-<div id="panel">
-  <h3>Edit Person</h3>
-
-  <label>Name</label>
-  <input id="nameInput">
-
-  <label>Gender</label>
-  <select id="genderInput">
-    <option value="male">Male</option>
-    <option value="female">Female</option>
-  </select>
-
-  <label>Birth Year</label>
-  <input id="birthInput">
-
-  <label>Village</label>
-  <input id="villageInput">
-
-  <button onclick="addParent()">➕ Add Parent</button>
-  <button onclick="addChild()">➕ Add Child</button>
+<link rel='stylesheet' href='style.css'>
+<link rel='stylesheet' href='debug_controls.css'>
+<link rel='stylesheet' href='svg_renderer.css'>
+<link rel="icon" type="image/png" href="/favicon.png" />
+<div class='overlay'>
+    <header>
+        <div>
+            <div class='title'></div>
+            <div class='subtitle'></div>
+        </div>
+        <div class='top-right'>
+            <select class='config-selector'></select>
+            <div class='tutorial'></div>
+        </div>
+    </header>
+    <div class='viewport'></div>
+    <footer>
+    </footer>
 </div>
-
-<!-- TREE AREA -->
-<div id="tree"></div>
-
+<!-- REMOVE THIS WHEN FORKED -->
 <script>
-let people = JSON.parse(localStorage.getItem("family")) || {
-  me: {
-    id: "me",
-    name: "Me",
-    gender: "male",
-    birth: "",
-    village: "",
-    x: 500,
-    y: 300,
-    parents: [],
-    children: []
-  }
-};
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
 
-let selectedId = "me";
+  ga('create', 'UA-24607980-7', 'auto');
+  ga('send', 'pageview');
 
-const tree = document.getElementById("tree");
-
-/* DRAW TREE */
-function draw() {
-  tree.innerHTML = "";
-
-  for (const id in people) {
-    const p = people[id];
-    const d = document.createElement("div");
-    d.className = "person " + p.gender;
-    d.style.left = p.x + "px";
-    d.style.top = p.y + "px";
-    d.innerHTML = `<strong>${p.name}</strong>`;
-    d.onclick = () => selectPerson(id);
-    tree.appendChild(d);
-
-    p.children.forEach(cid => drawLine(p, people[cid]));
-  }
-
-  localStorage.setItem("family", JSON.stringify(people));
-}
-
-/* DRAW LINE */
-function drawLine(a, b) {
-  const line = document.createElement("div");
-  line.className = "line";
-  line.style.left = (a.x + 55) + "px";
-  line.style.top = (a.y + 35) + "px";
-  line.style.width = "2px";
-  line.style.height = (b.y - a.y - 35) + "px";
-  tree.appendChild(line);
-}
-
-/* SELECT PERSON */
-function selectPerson(id) {
-  selectedId = id;
-  const p = people[id];
-  nameInput.value = p.name;
-  genderInput.value = p.gender;
-  birthInput.value = p.birth;
-  villageInput.value = p.village;
-}
-
-/* INPUT BINDING */
-nameInput.oninput = () => people[selectedId].name = nameInput.value;
-genderInput.onchange = () => people[selectedId].gender = genderInput.value;
-birthInput.oninput = () => people[selectedId].birth = birthInput.value;
-villageInput.oninput = () => people[selectedId].village = villageInput.value;
-
-/* ADD PARENT */
-function addParent() {
-  const id = "p" + Date.now();
-  const child = people[selectedId];
-
-  people[id] = {
-    id,
-    name: "Parent",
-    gender: "male",
-    birth: "",
-    village: "",
-    x: child.x - 150,
-    y: child.y - 120,
-    parents: [],
-    children: [selectedId]
-  };
-
-  child.parents.push(id);
-  draw();
-}
-
-/* ADD CHILD */
-function addChild() {
-  const id = "c" + Date.now();
-  const parent = people[selectedId];
-
-  people[id] = {
-    id,
-    name: "Child",
-    gender: "male",
-    birth: "",
-    village: "",
-    x: parent.x,
-    y: parent.y + 120,
-    parents: [selectedId],
-    children: []
-  };
-
-  parent.children.push(id);
-  draw();
-}
-
-draw();
-selectPerson("me");
 </script>
-
-</body>
-</html>
