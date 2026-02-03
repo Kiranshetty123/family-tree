@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Family Tree | ವಂಶವೃಕ್ಷ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  padding: 10px;
+}
+
+h1 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+/* Search */
+#searchBox {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto 20px;
+  display: block;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #aaa;
+}
+
+/* Tree layout */
+ul {
+  list-style: none;
+  padding-left: 20px;
+}
+
+li {
+  position: relative;
+  margin: 12px 0;
+}
+
+li::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 0;
+  border-left: 2px solid #aaa;
+  height: 100%;
+}
+
+li::after {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 22px;
+  border-top: 2px solid #aaa;
+  width: 12px;
+}
+
+/* Person card */
+.person {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  border: 2px solid #2c3e50;
+  max-width: 100%;
+}
+
+.person:hover {
+  opacity: 0.95;
+}
+
+/* Branch colors */
+.branch-a { border-color: #2980b9; background: #ebf5fb; }
+.branch-b { border-color: #27ae60; background: #eafaf1; }
+.branch-c { border-color: #8e44ad; background: #f5eef8; }
+
+/* Photo */
+.photo {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #777;
+}
+
+/* Text */
+.details {
+  flex: 1;
+}
+
+.en { font-weight: bold; }
+.kn { font-size: 13px; color: #555; }
+.years, .place {
+  font-size: 12px;
+  color: #666;
+}
+
+.hidden { display: none; }
+
+/* Print */
+@media print {
+  #searchBox, .print-btn { display: none; }
+  body { background: #fff; }
+  .person { page-break-inside: avoid; }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .person {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .photo {
+    width: 45px;
+    height: 45px;
+  }
+}
+</style>
+
+<script>
+function toggle(node) {
+  const next = node.parentElement.querySelector("ul");
+  if (next) next.classList.toggle("hidden");
+}
+
+function searchTree() {
+  const input = document.getElementById("searchBox").value.toLowerCase();
+  document.querySelectorAll(".person").forEach(p => {
+    const text = p.innerText.toLowerCase();
+    p.style.display = text.includes(input) ? "flex" : "none";
+  });
+}
+</script>
+</head>
+
+<body>
+
+<h1>Family Tree | ವಂಶವೃಕ್ಷ</h1>
+<div class="subtitle">Expandable • Public • Bilingual • Multi-Generation</div>
+
+<input id="searchBox" type="text" placeholder="Search name (English / Kannada)" onkeyup="searchTree()">
+
+<button class="print-btn" onclick="window.print()">🖨️ Print / Save as PDF</button>
+
+<ul>
+<li>
+  <div class="person" onclick="toggle(this)">
+    <img src="https://via.placeholder.com/100" class="photo">
+    <div class="details">
+      <div class="en">Ancestor – Generation 1</div>
+      <div class="kn">ಮೂಲ ಪೂರ್ವಜ – ತಲೆಮಾರು 1</div>
+      <div class="years">Birth: Unknown | Death: Unknown</div>
+      <div class="place">Village: Unknown</div>
+    </div>
+  </div>
+
+  <ul>
+
+    <!-- BRANCH A -->
+    <li>
+      <div class="person branch-a" onclick="toggle(this)">
+        <img src="https://via.placeholder.com/100" class="photo">
+        <div class="details">
+          <div class="en">Rama Shetty</div>
+          <div class="kn">ರಾಮ ಶೆಟ್ಟಿ</div>
+          <div class="years">1800 – 1870</div>
+          <div class="place">Village: Kundapura</div>
+        </div>
+      </div>
+
+      <ul>
+        <li>
+          <div class="person branch-a">
+            <img src="https://via.placeholder.com/100" class="photo">
+            <div class="details">
+              <div class="en">Generation 3</div>
+              <div class="kn">ತಲೆಮಾರು 3</div>
+              <div class="years">1830 – 1905</div>
+              <div class="place">Village: Udupi</div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </li>
+
+    <!-- BRANCH B -->
+    <li>
+      <div class="person branch-b">
+        <img src="https://via.placeholder.com/100" class="photo">
+        <div class="details">
+          <div class="en">Krishna Shetty</div>
+          <div class="kn">ಕೃಷ್ಣ ಶೆಟ್ಟಿ</div>
+          <div class="years">1810 – 1885</div>
+          <div class="place">Village: Brahmavara</div>
+        </div>
+      </div>
+    </li>
+
+  </ul>
+</li>
+</ul>
+
+</body>
+</html>
