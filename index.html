@@ -3,48 +3,66 @@
 <head>
 <meta charset="UTF-8">
 <title>Family Tree</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
 body {
   margin: 0;
-  display: flex;
-  height: 100vh;
   font-family: Arial, sans-serif;
   background: #f7f3ee;
+  display: flex;
+  height: 100vh;
 }
 
+/* LEFT PANEL */
 #panel {
-  width: 280px;
+  width: 300px;
   background: #efe8dc;
   padding: 15px;
   border-right: 1px solid #bbb;
 }
 
-label { font-size: 13px; display: block; margin-top: 8px; }
+h3 { margin-top: 0; }
+
+label {
+  font-size: 13px;
+  display: block;
+  margin-top: 8px;
+}
+
 input, select, button {
   width: 100%;
   padding: 6px;
   margin-top: 4px;
 }
 
+button {
+  cursor: pointer;
+}
+
+/* TREE AREA */
 #tree {
   flex: 1;
   position: relative;
   overflow: auto;
 }
 
+/* PERSON BOX */
 .person {
   position: absolute;
   padding: 6px 12px;
   border-radius: 6px;
   border: 1px solid #555;
   background: #fff;
-  text-align: center;
   cursor: pointer;
+  text-align: center;
+  min-width: 110px;
 }
 
 .male { background: #e6f0ff; }
 .female { background: #ffe6ea; }
 
+/* CONNECTOR */
 .line {
   position: absolute;
   width: 2px;
@@ -55,6 +73,7 @@ input, select, button {
 
 <body>
 
+<!-- LEFT PANEL -->
 <div id="panel">
   <h3>Edit Person</h3>
 
@@ -74,17 +93,39 @@ input, select, button {
   <input id="village">
 
   <button onclick="addParents()">➕ Add Parents</button>
+  <button onclick="addSpouse()">➕ Add Spouse</button>
   <button onclick="addChild()">➕ Add Child</button>
+
+  <hr>
+
+  <button onclick="saveFamily()">💾 Save Family</button>
+  <input type="file" onchange="loadFamily(event)">
 </div>
 
+<!-- TREE -->
 <div id="tree"></div>
 
 <script>
-let people = JSON.parse(localStorage.getItem("family2")) || {
-  me: { id:"me", name:"Kiran", gender:"male", gen:0, parents:[], children:[] }
+/* ===================== DATA ===================== */
+
+let people = {
+  me: {
+    id: "me",
+    name: "Me",
+    gender: "male",
+    birth: "",
+    village: "",
+    gen: 0,
+    parents: [],
+    spouse: null,
+    children: []
+  }
 };
 
-let selected = "me";
+let selectedId = "me";
+
+/* ===================== LAYOUT ===================== */
+
 const tree = document.getElementById("tree");
 
 function layout() {
@@ -100,12 +141,14 @@ function layout() {
     const spacing = 140;
     const startX = (tree.clientWidth / 2) - (list.length * spacing) / 2;
 
-    list.forEach((p,i) => {
+    list.forEach((p, i) => {
       p.x = startX + i * spacing;
       p.y = 250 + gen * 140;
     });
   });
 }
+
+/* ===================== DRAW ===================== */
 
 function draw() {
   tree.innerHTML = "";
@@ -122,61 +165,98 @@ function draw() {
 
     p.children.forEach(cid => drawLine(p, people[cid]));
   });
-
-  localStorage.setItem("family2", JSON.stringify(people));
 }
 
-function drawLine(a,b) {
+function drawLine(a, b) {
   const line = document.createElement("div");
   line.className = "line";
-  line.style.left = (a.x + 50) + "px";
+  line.style.left = (a.x + 55) + "px";
   line.style.top = (a.y + 35) + "px";
   line.style.height = (b.y - a.y - 35) + "px";
   tree.appendChild(line);
 }
 
+/* ===================== EDIT ===================== */
+
 function select(id) {
-  selected = id;
+  selectedId = id;
   const p = people[id];
   name.value = p.name;
   gender.value = p.gender;
-  birth.value = p.birth || "";
-  village.value = p.village || "";
+  birth.value = p.birth;
+  village.value = p.village;
 }
 
-name.oninput = () => people[selected].name = name.value;
-gender.onchange = () => { people[selected].gender = gender.value; draw(); };
-birth.oninput = () => people[selected].birth = birth.value;
-village.oninput = () => people[selected].village = village.value;
+name.oninput = () => { people[selectedId].name = name.value; draw(); };
+gender.onchange = () => { people[selectedId].gender = gender.value; draw(); };
+birth.oninput = () => people[selectedId].birth = birth.value;
+village.oninput = () => people[selectedId].village = village.value;
+
+/* ===================== ADD ===================== */
 
 function addParents() {
-  const child = people[selected];
+  const child = people[selectedId];
   if (child.parents.length) return;
 
-  const fatherId = "f" + Date.now();
-  const motherId = "m" + Date.now();
+  const f = "f" + Date.now();
+  const m = "m" + Date.now();
 
-  people[fatherId] = { id:fatherId, name:"Father", gender:"male", gen:child.gen - 1, parents:[], children:[child.id] };
-  people[motherId] = { id:motherId, name:"Mother", gender:"female", gen:child.gen - 1, parents:[], children:[child.id] };
+  people[f] = { id:f, name:"Father", gender:"male", gen:child.gen-1, parents:[], spouse:m, children:[child.id] };
+  people[m] = { id:m, name:"Mother", gender:"female", gen:child.gen-1, parents:[], spouse:f, children:[child.id] };
 
-  child.parents = [fatherId, motherId];
+  child.parents = [f, m];
+  draw();
+}
+
+function addSpouse() {
+  const p = people[selectedId];
+  if (p.spouse) return;
+
+  const s = "s" + Date.now();
+  people[s] = {
+    id:s, name:"Spouse", gender:p.gender==="male"?"female":"male",
+    gen:p.gen, parents:[], spouse:p.id, children:[]
+  };
+  p.spouse = s;
   draw();
 }
 
 function addChild() {
-  const parent = people[selected];
-  const id = "c" + Date.now();
+  const parent = people[selectedId];
+  const c = "c" + Date.now();
 
-  people[id] = {
-    id, name:"Child", gender:"male",
-    gen: parent.gen + 1,
-    parents:[parent.id],
-    children:[]
+  people[c] = {
+    id:c, name:"Child", gender:"male",
+    gen:parent.gen+1, parents:[parent.id], spouse:null, children:[]
   };
 
-  parent.children.push(id);
+  parent.children.push(c);
   draw();
 }
+
+/* ===================== SAVE / LOAD ===================== */
+
+function saveFamily() {
+  const data = JSON.stringify(people, null, 2);
+  const blob = new Blob([data], { type:"application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "family.json";
+  a.click();
+}
+
+function loadFamily(e) {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+  reader.onload = () => {
+    people = JSON.parse(reader.result);
+    selectedId = Object.keys(people)[0];
+    draw();
+  };
+  reader.readAsText(file);
+}
+
+/* ===================== START ===================== */
 
 draw();
 select("me");
